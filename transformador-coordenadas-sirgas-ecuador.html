@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transformador de Coordenadas — SIRGAS-ECUADOR · IGM</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --teal-50: #E1F5EE; --teal-200: #5DCAA5; --teal-600: #0F6E56; --teal-800: #085041;
+    --amber-50: #FAEEDA; --amber-200: #EF9F27; --amber-600: #854F0B;
+    --gray-50: #F7F7F5; --gray-100: #EFEFEB; --gray-200: #DDDDD8; --gray-400: #9A9A94;
+    --gray-600: #5A5A55; --gray-800: #2C2C28;
+    --red-50: #FCEBEB; --red-200: #F09595; --red-800: #791F1F;
+    --bg: #F4F3EF; --card: #FFFFFF; --border: #E0DDD8;
+    --text: #1E1E1A; --text-muted: #6B6B65; --text-hint: #9A9A94;
+    --font: 'IBM Plex Sans', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --radius: 10px; --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.06);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .page { max-width: 780px; margin: 0 auto; }
+
+  /* HEADER */
+  .header {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .header-left { flex: 1; }
+  .header-logo {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, #0F6E56, #1D9E75);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .header-title { font-size: 17px; font-weight: 600; color: var(--text); line-height: 1.2; }
+  .header-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .badge {
+    font-family: var(--mono); font-size: 10.5px;
+    padding: 3px 8px; border-radius: 4px;
+    border: 0.5px solid var(--border);
+    background: var(--gray-50); color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .badge.teal { background: var(--teal-50); color: var(--teal-600); border-color: var(--teal-200); }
+  .badge.amber { background: var(--amber-50); color: var(--amber-600); border-color: var(--amber-200); }
+  .header-right { text-align: right; }
+  .igm-label { font-size: 11px; color: var(--text-hint); line-height: 1.6; }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  /* DIR TABS */
+  .dir-tabs { display: flex; border-bottom: 0.5px solid var(--border); }
+  .dir-tab {
+    flex: 1; padding: 11px 12px; font-size: 13px; font-weight: 500;
+    color: var(--text-muted); cursor: pointer;
+    background: var(--gray-50); border: none; font-family: var(--font);
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: all 0.15s; border-bottom: 2px solid transparent;
+  }
+  .dir-tab:hover { color: var(--text); background: var(--card); }
+  .dir-tab.active { background: var(--card); color: var(--teal-600); border-bottom-color: var(--teal-200); }
+  .dir-tab svg { flex-shrink: 0; }
+
+  /* SECTIONS */
+  .section { padding: 1.1rem 1.5rem; border-bottom: 0.5px solid var(--border); }
+  .section:last-child { border-bottom: none; }
+  .section-label {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--text-hint); margin-bottom: 10px;
+  }
+
+  /* FORMAT TOGGLE */
+  .fmt-toggle { display: flex; gap: 6px; }
+  .fmt-btn {
+    padding: 6px 16px; font-size: 12.5px; border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border); background: none; cursor: pointer;
+    color: var(--text-muted); font-family: var(--font); transition: all 0.15s;
+  }
+  .fmt-btn:hover { background: var(--gray-50); color: var(--text); }
+  .fmt-btn.active { background: var(--teal-50); border-color: var(--teal-200); color: var(--teal-600); font-weight: 500; }
+
+  /* GRID LAYOUTS */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; }
+  @media (max-width: 540px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .grid4 { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* FIELDS */
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11.5px; font-weight: 500; color: var(--text-muted); }
+  .field .hint { font-size: 10px; color: var(--text-hint); }
+  input[type="number"], select {
+    width: 100%; padding: 8px 10px; font-size: 13px;
+    font-family: var(--mono); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); background: var(--card); color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield; appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input:focus, select:focus {
+    outline: none; border-color: var(--teal-200);
+    box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
+  }
+  select { font-family: var(--font); cursor: pointer; }
+
+  /* DMS GROUP */
+  .dms-group { display: flex; flex-direction: column; gap: 6px; }
+  .dms-group-title { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 8px; padding: 1.1rem 1.5rem; background: var(--gray-50); border-top: 0.5px solid var(--border); }
+  .btn-convert {
+    flex: 1; padding: 11px; font-size: 13.5px; font-weight: 600;
+    background: #0F6E56; color: white; border: none;
+    border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.15s; letter-spacing: 0.01em;
+  }
+  .btn-convert:hover { background: #085041; }
+  .btn-convert:active { transform: scale(0.98); }
+  .btn-new {
+    padding: 11px 18px; font-size: 12.5px; background: none;
+    border: 0.5px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text-muted); cursor: pointer; font-family: var(--font);
+    display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-new:hover { background: var(--card); color: var(--text); }
+
+  /* RESULTS */
+  .result-area { padding: 1.1rem 1.5rem; }
+  .result-box { display: none; }
+  .result-box.show { display: block; }
+  .result-header {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--teal-600); margin-bottom: 12px;
+  }
+  .result-header .check {
+    width: 18px; height: 18px; background: var(--teal-50);
+    border: 0.5px solid var(--teal-200); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--teal-600);
+  }
+  .zone-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .zone-pill {
+    font-family: var(--mono); font-size: 11.5px; padding: 4px 10px;
+    border-radius: 20px; background: var(--teal-50);
+    color: var(--teal-600); border: 0.5px solid var(--teal-200); font-weight: 500;
+  }
+  .result-grid { display: grid; gap: 10px; }
+  .result-grid.cols2 { grid-template-columns: 1fr 1fr; }
+  .result-item {
+    background: var(--gray-50); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+  }
+  .result-item-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-hint); margin-bottom: 6px; font-weight: 600; }
+  .result-item-val { font-size: 15px; font-family: var(--mono); color: var(--text); font-weight: 500; word-break: break-all; }
+  .result-item-sub { font-size: 11.5px; font-family: var(--mono); color: var(--text-muted); margin-top: 4px; }
+  .result-verify {
+    margin-top: 10px; background: var(--gray-50); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    border-left: 3px solid var(--teal-200);
+  }
+  .result-verify-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-hint); margin-bottom: 5px; font-weight: 600; }
+  .result-verify-val { font-size: 11.5px; font-family: var(--mono); color: var(--text-muted); line-height: 1.6; }
+
+  /* ERROR */
+  .error-box {
+    display: none; background: var(--red-50); border: 0.5px solid var(--red-200);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    color: var(--red-800); font-size: 12.5px; gap: 8px; align-items: center;
+    margin-bottom: 0;
+  }
+  .error-box.show { display: flex; }
+
+  /* HISTORY */
+  .history-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .history-head {
+    padding: 10px 1.5rem; background: var(--gray-50);
+    border-bottom: 0.5px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .history-head-title {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .hist-badge {
+    font-size: 11px; background: var(--teal-50); color: var(--teal-600);
+    border: 0.5px solid var(--teal-200); padding: 2px 8px; border-radius: 10px; font-weight: 600;
+  }
+  .hist-empty { padding: 2rem 1.5rem; text-align: center; color: var(--text-hint); font-size: 13px; }
+  .hist-empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
+  .hist-item {
+    padding: 12px 1.5rem; border-bottom: 0.5px solid var(--border);
+    display: flex; gap: 12px; align-items: flex-start;
+    transition: background 0.1s;
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-item:hover { background: var(--gray-50); }
+  .hist-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--gray-100); color: var(--text-muted); font-size: 10.5px;
+    font-weight: 600; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .hist-content { flex: 1; min-width: 0; }
+  .hist-meta { font-size: 10px; color: var(--text-hint); margin-bottom: 7px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hist-dir-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    background: var(--gray-100); color: var(--text-muted);
+    border: 0.5px solid var(--border); font-weight: 500;
+  }
+  .hist-cols { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: start; }
+  .hist-col-lbl { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-hint); margin-bottom: 3px; font-weight: 600; }
+  .hist-col-val { font-size: 11px; font-family: var(--mono); color: var(--text); word-break: break-all; line-height: 1.5; }
+  .hist-col-val.out { color: var(--teal-600); }
+  .hist-arrow { color: var(--text-hint); font-size: 14px; padding-top: 16px; }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 1.5rem; text-align: center;
+    font-size: 11px; color: var(--text-hint); line-height: 1.8;
+  }
+  .footer span { color: var(--teal-600); font-weight: 500; }
+
+  /* SVG icons inline */
+  .ico { display: inline-flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">
+        <div class="logo-icon">🌐</div>
+        <div>
+          <div class="header-title">Transformador de Coordenadas Geodésicas</div>
+          <div class="header-sub">Instituto Geográfico Militar del Ecuador · Norma vigente IGM-EC</div>
+        </div>
+      </div>
+      <div class="badge-row">
+        <span class="badge teal">SIRGAS-ECUADOR</span>
+        <span class="badge teal">ITRF2020</span>
+        <span class="badge amber">Época 2021.8</span>
+        <span class="badge">Semana GPS 2180</span>
+        <span class="badge">DOY 296</span>
+        <span class="badge">Reporte IGM-EC Nro. 75</span>
+        <span class="badge">GRS80</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="igm-label">
+        Marco: SIRGAS-ECUADOR<br>
+        Referencia: ITRF2020<br>
+        Elipsoide: GRS80<br>
+        k₀ = 0.9996
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CARD -->
+  <div class="card">
+
+    <!-- TABS -->
+    <div class="dir-tabs">
+      <button class="dir-tab active" id="tab-geo" onclick="setDir('geo')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Geográficas → UTM
+      </button>
+      <button class="dir-tab" id="tab-utm" onclick="setDir('utm')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        UTM → Geográficas
+      </button>
+    </div>
+
+    <!-- FORMAT SELECTOR (only for geo→utm) -->
+    <div class="section" id="sec-format">
+      <div class="section-label">Formato de entrada — coordenadas geográficas</div>
+      <div class="fmt-toggle">
+        <button class="fmt-btn active" id="fmt-dd" onclick="setFmt('dd')">Grados decimales (DD)</button>
+        <button class="fmt-btn" id="fmt-dms" onclick="setFmt('dms')">Grados · Minutos · Segundos (DMS)</button>
+      </div>
+    </div>
+
+    <!-- INPUTS GEO -->
+    <div class="section" id="sec-geo">
+      <div class="section-label">Coordenadas geográficas de entrada</div>
+
+      <!-- DD inputs -->
+      <div id="dd-inputs" class="grid2">
+        <div class="field">
+          <label>Latitud (°)</label>
+          <input type="number" id="dd-lat" placeholder="-2.123456789" step="any">
+          <span class="hint">Sur = valor negativo · Norte = valor positivo</span>
+        </div>
+        <div class="field">
+          <label>Longitud (°)</label>
+          <input type="number" id="dd-lon" placeholder="-78.456789012" step="any">
+          <span class="hint">Oeste = valor negativo · Este = valor positivo</span>
+        </div>
+      </div>
+
+      <!-- DMS inputs -->
+      <div id="dms-inputs" style="display:none">
+        <div class="grid2" style="gap:16px">
+          <div class="dms-group">
+            <div class="dms-group-title">Latitud</div>
+            <div class="grid4">
+              <div class="field"><label>Grados (°)</label><input type="number" id="dms-latd" placeholder="2" step="1" min="0" max="90"></div>
+              <div class="field"><label>Minutos (')</label><input type="number" id="dms-latm" placeholder="7" step="1" min="0" max="59"></div>
+              <div class="field"><label>Segundos (")</label><input type="number" id="dms-lats" placeholder="24.35760" step="any" min="0"></div>
+              <div class="field"><label>Hem.</label><select id="dms-latdir"><option value="S">S</option><option value="N">N</option></select></div>
+            </div>
+          </div>
+          <div class="dms-group">
+            <div class="dms-group-title">Longitud</div>
+            <div class="grid4">
+              <div class="field"><label>Grados (°)</label><input type="number" id="dms-lond" placeholder="78" step="1" min="0" max="180"></div>
+              <div class="field"><label>Minutos (')</label><input type="number" id="dms-lonm" placeholder="27" step="1" min="0" max="59"></div>
+              <div class="field"><label>Segundos (")</label><input type="number" id="dms-lons" placeholder="21.89340" step="any" min="0"></div>
+              <div class="field"><label>Hem.</label><select id="dms-londir"><option value="W">O (W)</option><option value="E">E</option></select></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUTS UTM -->
+    <div class="section" id="sec-utm" style="display:none">
+      <div class="section-label">Coordenadas UTM de entrada</div>
+      <div class="grid2" style="margin-bottom:12px">
+        <div class="field">
+          <label>Este — Easting (m)</label>
+          <input type="number" id="utm-e" placeholder="720453.2340" step="any">
+          <span class="hint">Rango válido: 100 000 – 900 000 m</span>
+        </div>
+        <div class="field">
+          <label>Norte — Northing (m)</label>
+          <input type="number" id="utm-n" placeholder="9750321.4560" step="any">
+          <span class="hint">S: 0 – 10 000 000 m · N: 0 – 10 000 000 m</span>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Zona UTM</label>
+          <select id="utm-zone">
+            <option value="14">14</option>
+            <option value="15">15 (Galápagos occ.)</option>
+            <option value="16">16 (Galápagos or.)</option>
+            <option value="17" selected>17 (Ecuador occidental)</option>
+            <option value="18">18 (Ecuador oriental)</option>
+            <option value="19">19</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Hemisferio</label>
+          <select id="utm-hem">
+            <option value="S" selected>S — Hemisferio Sur</option>
+            <option value="N">N — Hemisferio Norte</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="btn-row">
+      <button class="btn-convert" onclick="convert()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+        Transformar coordenadas
+      </button>
+      <button class="btn-new" onclick="nuevaConversion()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        Nueva conversión
+      </button>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="result-area">
+      <div class="error-box" id="err-box">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="err-msg"></span>
+      </div>
+      <div class="result-box" id="result-box">
+        <div class="result-header">
+          <div class="check">✓</div>
+          Resultado de la transformación
+        </div>
+        <div id="result-content"></div>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+
+  <!-- HISTORY -->
+  <div class="history-card">
+    <div class="history-head">
+      <div class="history-head-title">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Historial de conversiones
+      </div>
+      <span class="hist-badge" id="hist-count">0 / 5</span>
+    </div>
+    <div id="history-list">
+      <div class="hist-empty" id="hist-empty">
+        <div class="hist-empty-icon">🗄️</div>
+        Sin conversiones aún. Realice su primera transformación.
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>SIRGAS-ECUADOR · ITRF2020 · Época 2021.8 · Semana GPS 2180 · DOY 296</span><br>
+    Elipsoide GRS80 · a = 6 378 137.0 m · f = 1/298.257222101 · k₀ = 0.9996<br>
+    Algoritmo: Series de Helmert (6.º orden) · Arco meridiano (sin6φ) · Latitud de pie de perpendicular (8.º orden)<br>
+    Redes geodésicas: REGME (43 estaciones) · RENAGE (140 vértices) · Campo de velocidades 2020–2025<br>
+    Instituto Geográfico Militar del Ecuador · IGM-EC_IRD-FR Reporte Nro. 75
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  PARÁMETROS GEODÉSICOS — GRS80 / SIRGAS-ECUADOR / ITRF2020
+// ═══════════════════════════════════════════════════════════════
+const a    = 6378137.0;          // Semieje mayor (m)
+const f    = 1/298.257222101;    // Achatamiento GRS80
+const e2   = 2*f - f*f;          // Primera excentricidad al cuadrado
+const e    = Math.sqrt(e2);      // Primera excentricidad
+const ep2  = e2/(1-e2);          // Segunda excentricidad al cuadrado
+const k0   = 0.9996;             // Factor de escala UTM
+const FE   = 500000;             // Falso Este
+const FN_S = 10000000;           // Falso Norte Hemisferio Sur
+
+// ═══════════════════════════════════════════════════════════════
+//  ARCO MERIDIANO — serie trigonométrica hasta sin(6φ)
+// ═══════════════════════════════════════════════════════════════
+function meridionalArc(phi) {
+  const e4 = e2*e2, e6 = e4*e2;
+  return a * (
+    (1 - e2/4 - 3*e4/64 - 5*e6/256) * phi
+    - (3*e2/8 + 3*e4/32 + 45*e6/1024) * Math.sin(2*phi)
+    + (15*e4/256 + 45*e6/1024) * Math.sin(4*phi)
+    - (35*e6/3072) * Math.sin(6*phi)
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GEOGRÁFICAS → UTM
+//  Helmert, series hasta A⁶ (6.º orden)
+// ═══════════════════════════════════════════════════════════════
+function geoToUTM(lat, lon) {
+  if (lat < -90 || lat > 90)   throw new Error('Latitud fuera de rango (-90° a 90°).');
+  if (lon < -180 || lon > 180) throw new Error('Longitud fuera de rango (-180° a 180°).');
+
+  const phi  = lat * Math.PI / 180;
+  const lam  = lon * Math.PI / 180;
+  const zone = Math.floor((lon + 180) / 6) + 1;
+  const lam0 = ((zone - 1) * 6 - 180 + 3) * Math.PI / 180;
+  const hem  = lat >= 0 ? 'N' : 'S';
+  const N0   = lat >= 0 ? 0 : FN_S;
+
+  const sphi = Math.sin(phi), cphi = Math.cos(phi), tphi = Math.tan(phi);
+  const Nrad = a / Math.sqrt(1 - e2 * sphi * sphi);
+  const T    = tphi * tphi;
+  const C    = ep2 * cphi * cphi;
+  const A_   = cphi * (lam - lam0);
+  const M    = meridionalArc(phi);
+
+  const A2 = A_*A_, A3 = A2*A_, A4 = A3*A_, A5 = A4*A_, A6 = A5*A_;
+
+  const E_ = k0 * Nrad * (
+    A_
+    + (1 - T + C) * A3 / 6
+    + (5 - 18*T + T*T + 72*C - 58*ep2) * A5 / 120
+  ) + FE;
+
+  const N_ = k0 * (
+    M + Nrad * tphi * (
+      A2 / 2
+      + (5 - T + 9*C + 4*C*C) * A4 / 24
+      + (61 - 58*T + T*T + 600*C - 330*ep2) * A6 / 720
+    )
+  ) + N0;
+
+  return { E: E_, N: N_, zone, hem };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UTM → GEOGRÁFICAS
+//  Latitud de pie de perpendicular — series hasta sin(8μ)
+//  Helmert inverso — series hasta D⁶
+// ═══════════════════════════════════════════════════════════════
+function utmToGeo(E_, N_, zone, hem) {
+  if (E_ < 100000 || E_ > 900000)
+    throw new Error('Este (Easting) fuera del rango UTM válido (100 000 – 900 000 m).');
+
+  const N0   = hem === 'N' ? 0 : FN_S;
+  const lam0 = ((zone - 1) * 6 - 180 + 3) * Math.PI / 180;
+  const e4   = e2*e2, e6 = e4*e2;
+
+  // Arco meridiano reducido
+  const M1 = (N_ - N0) / k0;
+
+  // Parámetro e1 (Bessel)
+  const e1  = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+  const e12 = e1*e1, e13 = e12*e1, e14 = e13*e1;
+
+  // Ángulo de Gauss-Krüger
+  const mu = M1 / (a * (1 - e2/4 - 3*e4/64 - 5*e6/256));
+
+  // Latitud de pie de perpendicular φ₁ — serie hasta sin(8μ)
+  const phi1 = mu
+    + (3*e1/2 - 27*e13/32) * Math.sin(2*mu)
+    + (21*e12/16 - 55*e14/32) * Math.sin(4*mu)
+    + (151*e13/96) * Math.sin(6*mu)
+    + (1097*e14/512) * Math.sin(8*mu);
+
+  const sphi1 = Math.sin(phi1), cphi1 = Math.cos(phi1), tphi1 = Math.tan(phi1);
+  const N1  = a / Math.sqrt(1 - e2 * sphi1 * sphi1);
+  const T1  = tphi1 * tphi1;
+  const C1  = ep2 * cphi1 * cphi1;
+  const R1  = a * (1 - e2) / Math.pow(1 - e2 * sphi1 * sphi1, 1.5);
+  const D   = (E_ - FE) / (N1 * k0);
+  const D2  = D*D, D3 = D2*D, D4 = D3*D, D5 = D4*D, D6 = D5*D;
+
+  const lat = phi1 - (N1 * tphi1 / R1) * (
+    D2 / 2
+    - (5 + 3*T1 + 10*C1 - 4*C1*C1 - 9*ep2) * D4 / 24
+    + (61 + 90*T1 + 298*C1 + 45*T1*T1 - 252*ep2 - 3*C1*C1) * D6 / 720
+  );
+
+  const lon = lam0 + (
+    D
+    - (1 + 2*T1 + C1) * D3 / 6
+    + (5 - 2*C1 + 28*T1 - 3*C1*C1 + 8*ep2 + 24*T1*T1) * D5 / 120
+  ) / cphi1;
+
+  return { lat: lat * 180 / Math.PI, lon: lon * 180 / Math.PI };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UTILIDADES DMS / DD
+// ═══════════════════════════════════════════════════════════════
+function decimalToDMS(decimal) {
+  const abs = Math.abs(decimal);
+  const deg = Math.floor(abs);
+  const mf  = (abs - deg) * 60;
+  const min = Math.floor(mf);
+  const sec = (mf - min) * 60;
+  return { deg, min, sec, sign: decimal < 0 ? -1 : 1 };
+}
+
+function dmsToDecimal(deg, min, sec, dir) {
+  const m = (dir === 'S' || dir === 'W') ? -1 : 1;
+  return m * (Math.abs(parseFloat(deg) || 0) + (parseFloat(min) || 0) / 60 + (parseFloat(sec) || 0) / 3600);
+}
+
+function fmtDMS(decimal, isLat) {
+  const { deg, min, sec, sign } = decimalToDMS(decimal);
+  const dir = isLat ? (sign < 0 ? 'S' : 'N') : (sign < 0 ? 'O (W)' : 'E');
+  return `${deg}° ${min}' ${sec.toFixed(6)}" ${dir}`;
+}
+
+function fmtDD(v, d) { return parseFloat(v).toFixed(d !== undefined ? d : 10); }
+
+// ═══════════════════════════════════════════════════════════════
+//  UI STATE
+// ═══════════════════════════════════════════════════════════════
+let currentDir = 'geo', currentFmt = 'dd';
+const history  = [];
+
+function setDir(d) {
+  currentDir = d;
+  document.getElementById('tab-geo').className = 'dir-tab' + (d==='geo' ? ' active' : '');
+  document.getElementById('tab-utm').className = 'dir-tab' + (d==='utm' ? ' active' : '');
+  document.getElementById('sec-format').style.display = d==='geo' ? '' : 'none';
+  document.getElementById('sec-geo').style.display    = d==='geo' ? '' : 'none';
+  document.getElementById('sec-utm').style.display    = d==='utm' ? '' : 'none';
+  hideResult();
+}
+
+function setFmt(f) {
+  currentFmt = f;
+  document.getElementById('fmt-dd').className  = 'fmt-btn' + (f==='dd' ? ' active' : '');
+  document.getElementById('fmt-dms').className = 'fmt-btn' + (f==='dms' ? ' active' : '');
+  document.getElementById('dd-inputs').style.display  = f==='dd'  ? '' : 'none';
+  document.getElementById('dms-inputs').style.display = f==='dms' ? '' : 'none';
+  hideResult();
+}
+
+function hideResult() {
+  document.getElementById('result-box').className = 'result-box';
+  document.getElementById('err-box').className    = 'error-box';
+}
+
+function showError(msg) {
+  document.getElementById('err-msg').textContent = msg;
+  document.getElementById('err-box').className   = 'error-box show';
+  document.getElementById('result-box').className = 'result-box';
+}
+
+function nuevaConversion() {
+  ['dd-lat','dd-lon','dms-latd','dms-latm','dms-lats',
+   'dms-lond','dms-lonm','dms-lons','utm-e','utm-n'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  hideResult();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CONVERSIÓN PRINCIPAL
+// ═══════════════════════════════════════════════════════════════
+function convert() {
+  hideResult();
+  try {
+    if (currentDir === 'geo') {
+      let lat, lon;
+      if (currentFmt === 'dd') {
+        lat = parseFloat(document.getElementById('dd-lat').value);
+        lon = parseFloat(document.getElementById('dd-lon').value);
+        if (isNaN(lat) || isNaN(lon)) throw new Error('Ingrese los valores de latitud y longitud.');
+      } else {
+        const ld   = document.getElementById('dms-latd').value;
+        const lm   = document.getElementById('dms-latm').value;
+        const ls   = document.getElementById('dms-lats').value;
+        const ldir = document.getElementById('dms-latdir').value;
+        const od   = document.getElementById('dms-lond').value;
+        const om   = document.getElementById('dms-lonm').value;
+        const os   = document.getElementById('dms-lons').value;
+        const odir = document.getElementById('dms-londir').value;
+        if (!ld || !od) throw new Error('Ingrese al menos los grados de latitud y longitud.');
+        lat = dmsToDecimal(ld, lm, ls, ldir);
+        lon = dmsToDecimal(od, om, os, odir);
+      }
+      const res = geoToUTM(lat, lon);
+      const latDMS = fmtDMS(lat, true);
+      const lonDMS = fmtDMS(lon, false);
+      const latDD  = fmtDD(lat, 10);
+      const lonDD  = fmtDD(lon, 10);
+
+      const inLabel  = currentFmt === 'dd'
+        ? `${latDD}°, ${lonDD}°`
+        : `${latDMS} / ${lonDMS}`;
+      const outLabel = `${res.zone}${res.hem}  E: ${res.E.toFixed(4)} m  N: ${res.N.toFixed(4)} m`;
+
+      renderGeoToUTM(lat, lon, latDMS, lonDMS, latDD, lonDD, res);
+      addHistory('Geog. → UTM', inLabel, outLabel);
+
+    } else {
+      const E_    = parseFloat(document.getElementById('utm-e').value);
+      const N_    = parseFloat(document.getElementById('utm-n').value);
+      const zone  = parseInt(document.getElementById('utm-zone').value);
+      const hem   = document.getElementById('utm-hem').value;
+      if (isNaN(E_) || isNaN(N_)) throw new Error('Ingrese los valores de Este y Norte.');
+      const res   = utmToGeo(E_, N_, zone, hem);
+      if (res.lat < -90 || res.lat > 90)
+        throw new Error('Resultado de latitud fuera de rango. Verifique zona y hemisferio.');
+      const latDMS = fmtDMS(res.lat, true);
+      const lonDMS = fmtDMS(res.lon, false);
+      const latDD  = fmtDD(res.lat, 10);
+      const lonDD  = fmtDD(res.lon, 10);
+
+      const inLabel  = `Zona ${zone}${hem}  E: ${E_.toFixed(4)} m  N: ${N_.toFixed(4)} m`;
+      const outLabel = `${latDD}°, ${lonDD}°`;
+
+      renderUTMToGeo(E_, N_, zone, hem, res.lat, res.lon, latDMS, lonDMS, latDD, lonDD);
+      addHistory('UTM → Geog.', inLabel, outLabel);
+    }
+  } catch(e) {
+    showError(e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER RESULTADOS
+// ═══════════════════════════════════════════════════════════════
+function renderGeoToUTM(lat, lon, latDMS, lonDMS, latDD, lonDD, utm) {
+  const cm = (utm.zone - 1) * 6 - 180 + 3;
+  document.getElementById('result-content').innerHTML = `
+    <div class="zone-pills">
+      <span class="zone-pill">Zona ${utm.zone}${utm.hem}</span>
+      <span class="zone-pill">Meridiano Central: ${cm}°</span>
+      <span class="zone-pill">GRS80 · SIRGAS-ECUADOR</span>
+    </div>
+    <div class="result-grid cols2">
+      <div class="result-item">
+        <div class="result-item-lbl">Este — Easting</div>
+        <div class="result-item-val">${utm.E.toFixed(4)} m</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-lbl">Norte — Northing</div>
+        <div class="result-item-val">${utm.N.toFixed(4)} m</div>
+      </div>
+    </div>
+    <div class="result-verify">
+      <div class="result-verify-lbl">Coordenada ingresada — verificación</div>
+      <div class="result-verify-val">
+        DD &nbsp;&nbsp;: ${latDD}° &nbsp;&nbsp; ${lonDD}°<br>
+        DMS: ${latDMS} &nbsp;&nbsp; ${lonDMS}
+      </div>
+    </div>`;
+  document.getElementById('result-box').className = 'result-box show';
+}
+
+function renderUTMToGeo(E_, N_, zone, hem, lat, lon, latDMS, lonDMS, latDD, lonDD) {
+  document.getElementById('result-content').innerHTML = `
+    <div class="zone-pills">
+      <span class="zone-pill">Zona ${zone}${hem}</span>
+      <span class="zone-pill">GRS80 · SIRGAS-ECUADOR</span>
+    </div>
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="result-item-lbl">Grados decimales — DD</div>
+        <div class="result-item-val">${latDD}°</div>
+        <div class="result-item-sub">${lonDD}°</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-lbl">Grados · Minutos · Segundos — DMS</div>
+        <div class="result-item-val" style="font-size:13.5px">${latDMS}</div>
+        <div class="result-item-sub">${lonDMS}</div>
+      </div>
+    </div>
+    <div class="result-verify">
+      <div class="result-verify-lbl">Coordenada ingresada — verificación</div>
+      <div class="result-verify-val">Zona ${zone}${hem} · E: ${E_.toFixed(4)} m · N: ${N_.toFixed(4)} m</div>
+    </div>`;
+  document.getElementById('result-box').className = 'result-box show';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HISTORIAL
+// ═══════════════════════════════════════════════════════════════
+function addHistory(dir, ingresada, transformada) {
+  const now = new Date();
+  const p   = n => String(n).padStart(2, '0');
+  history.unshift({
+    dir, ingresada, transformada,
+    fecha: `${p(now.getDate())}/${p(now.getMonth()+1)}/${now.getFullYear()}`,
+    hora:  `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`
+  });
+  if (history.length > 5) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  const hl = document.getElementById('history-list');
+  document.getElementById('hist-count').textContent = `${history.length} / 5`;
+  if (history.length === 0) {
+    hl.innerHTML = '<div class="hist-empty" id="hist-empty"><div class="hist-empty-icon">🗄️</div>Sin conversiones aún. Realice su primera transformación.</div>';
+    return;
+  }
+  hl.innerHTML = history.map((h, i) => `
+    <div class="hist-item">
+      <div class="hist-num">${i + 1}</div>
+      <div class="hist-content">
+        <div class="hist-meta">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ${h.fecha} &nbsp; ${h.hora}
+          <span class="hist-dir-tag">${h.dir}</span>
+        </div>
+        <div class="hist-cols">
+          <div>
+            <div class="hist-col-lbl">Coord. ingresada</div>
+            <div class="hist-col-val">${h.ingresada}</div>
+          </div>
+          <div class="hist-arrow">→</div>
+          <div>
+            <div class="hist-col-lbl">Coord. transformada</div>
+            <div class="hist-col-val out">${h.transformada}</div>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+renderHistory();
+</script>
+</body>
+</html>
